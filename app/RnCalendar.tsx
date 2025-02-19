@@ -1,5 +1,13 @@
 import { Button, ButtonText } from "@/components/ui/button";
-import { TextInput, Alert } from "react-native";
+import {
+  TextInput,
+  Alert,
+  Modal,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { Calendar } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
@@ -31,6 +39,7 @@ export default function RnCalendar() {
   const [endTime, setEndTime] = useState("");
   const [isStartPickerVisible, setStartPickerVisible] = useState(false);
   const [isEndPickerVisible, setEndPickerVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -48,7 +57,7 @@ export default function RnCalendar() {
         Alert.alert("Error", "Please select a date, event name, and times");
         return;
       }
-  
+
       const newEvent: any = {
         name: eventName,
         startTime,
@@ -57,65 +66,161 @@ export default function RnCalendar() {
         repeat,
         id: `event-${Date.now()}`,
       };
-  
+
       console.log(newEvent, "newEvent");
-  
+
       if (new Date(selectedDate).getTime() < new Date().setHours(0, 0, 0, 0)) {
-        console.log('Invalid Date Attempt')
+        console.log("Invalid Date Attempt");
         Alert.alert("Invalid Date", "Cannot create events in the past.");
         return;
       }
-  
-      const existingEvents = getEventsForDate(newEvent.date, startTime, endTime);
-      console.log(existingEvents, 'existingEvents');
-  
+
+      const existingEvents = getEventsForDate(
+        newEvent.date,
+        startTime,
+        endTime
+      );
+      console.log(existingEvents, "existingEvents");
+
       if (!existingEvents) {
         console.log("getEventsForDate returned undefined or null");
       }
-  
+
       const hasConflict = existingEvents?.some(
         (event) =>
-          newEvent.startTime < event.endTime && newEvent.endTime > event.startTime
+          newEvent.startTime < event.endTime &&
+          newEvent.endTime > event.startTime
       );
-  
+
       console.log(hasConflict, "hasConflict");
-  
+
       if (hasConflict) {
         alert("Event time conflicts with another event!");
         return;
       }
-  
+
       dispatch({ type: "ADD_EVENT", payload: newEvent });
-  
+
       const updatedEvents = {
         ...state.events,
         [selectedDate]: [...(state.events[selectedDate] || []), newEvent],
       };
-  
+
       await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
       Alert.alert("Success", "Event saved successfully!");
-      setSelectedDate('')
-      setEventName('')
-      setStartTime('')
-      setEndTime('')
+      setSelectedDate("");
+      setEventName("");
+      setStartTime("");
+      setEndTime("");
     } catch (error) {
       console.error("Error in saveEvent:", error);
       Alert.alert("Error", "Something went wrong!");
     }
   };
-  
+
+  const getMarkedDates = () => {
+    const marked: Record<string, any> = {};
+
+    if (!state.events) return marked;
+
+    Object.keys(state.events).forEach((date) => {
+      marked[date] = { marked: true, dotColor: "blue" };
+    });
+
+    // Keep selectedDate highlighted as well
+    if (selectedDate) {
+      marked[selectedDate] = {
+        ...marked[selectedDate], // Preserve existing marks
+        selected: true,
+        selectedColor: "yellow",
+      };
+    }
+
+    return marked;
+  };
+
+  const deleteEvent = async (id: string, date: string) => {
+    try {
+      dispatch({ type: "DELETE_EVENT", payload: { id, date } });
+
+      const updatedEvents = {
+        ...state.events,
+        [selectedDate]: state.events[date]?.filter((e) => e.id !== id),
+      };
+
+      await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
+      Alert.alert("Success", "Event deleted successfully!");
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error in saveEvent:", error);
+      Alert.alert("Error", "Something went wrong!");
+    }
+  };
+
   return (
     <Center>
       <Calendar
-        onDayPress={(day: any) => setSelectedDate(day.dateString)}
-        markedDates={{
-          [selectedDate]: {
-            selected: true,
-            marked: true,
-            selectedColor: "yellow",
-          },
+        onDayPress={(day: any) => {
+          setSelectedDate(day.dateString);
+          setModalVisible(true);
         }}
+        markedDates={getMarkedDates()}
       />
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={{ flex: 1, padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+            Events for {selectedDate}
+          </Text>
+          <FlatList
+            data={state.events[selectedDate] || []}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View
+                style={{
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  paddingVertical: 10,
+                }}
+              >
+                <Text>
+                  {item.name} - From: {item.startTime} - To: {item.endTime} {" "}
+                  {item.repeat === "weekly"
+                    ? "Weekly"
+                    : item.repeat === "biWeekly"
+                    ? "Bi-Weekly"
+                    : "Monthly"}
+                </Text>
+
+                <Box style={{ display: "flex", flexDirection: "row", gap: 8, marginTop: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // editEv(item.id, item.date);
+                    }}
+                  >
+                    <Text style={{ color: "blue" }}>Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      deleteEvent(item.id, item.date);
+                    }}
+                  >
+                    <Text style={{ color: "red" }}>Delete</Text>
+                  </TouchableOpacity>
+                </Box>
+              </View>
+            )}
+          />
+          <Button onPress={() => setModalVisible(false)}>
+            <ButtonText>Close</ButtonText>
+          </Button>
+        </View>
+      </Modal>
 
       <Box className="p-10">
         <TextInput
@@ -128,7 +233,9 @@ export default function RnCalendar() {
           className="w-full mt-2"
           onPress={() => setStartPickerVisible(true)}
         >
-          <ButtonText>Select Start Time: {startTime || "Not Set"}</ButtonText>
+          <ButtonText className="w-full text-center">
+            Select Start Time: {startTime || "Not Set"}
+          </ButtonText>
         </Button>
         <DateTimePickerModal
           isVisible={isStartPickerVisible}
@@ -149,7 +256,9 @@ export default function RnCalendar() {
           className="w-full mt-2"
           onPress={() => setEndPickerVisible(true)}
         >
-          <ButtonText>Select End Time: {endTime || "Not Set"}</ButtonText>
+          <ButtonText className="w-full text-center">
+            Select End Time: {endTime || "Not Set"}
+          </ButtonText>
         </Button>
         <DateTimePickerModal
           isVisible={isEndPickerVisible}

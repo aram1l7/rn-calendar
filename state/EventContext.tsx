@@ -130,7 +130,7 @@ export const useEvents = () => {
 
   const getEventsForDate = (date: Date, startTime: string, endTime: string) => {
    
-    const eventsForDate = context?.state.events[date.toLocaleDateString('sv-SE')] || [];
+    const eventsForDate = context?.state.events[new Date(date).toLocaleDateString('sv-SE')] || [];
   
     console.log(eventsForDate, "eventsForDate");
   
