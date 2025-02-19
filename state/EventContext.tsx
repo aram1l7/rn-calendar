@@ -132,6 +132,8 @@ export const useEvents = () => {
     const formattedDate = date.toISOString().split("T")[0];
     const eventsForDate = context?.state.events[formattedDate] || [];
 
+    console.log(eventsForDate, 'eventsForDate')
+
     return eventsForDate.filter(
       (event: Event) =>
         !(event.startTime < endTime && event.endTime > startTime) &&
