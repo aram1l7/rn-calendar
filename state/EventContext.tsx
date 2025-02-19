@@ -129,19 +129,28 @@ export const useEvents = () => {
   const context = useContext(EventContext);
 
   const getEventsForDate = (date: Date, startTime: string, endTime: string) => {
-    const formattedDate = date.toISOString().split("T")[0];
-    const eventsForDate = context?.state.events[formattedDate] || [];
-
-    console.log(eventsForDate, 'eventsForDate')
-
-    return eventsForDate.filter(
-      (event: Event) =>
-        !(event.startTime < endTime && event.endTime > startTime) &&
-        ((event.repeat === "weekly" && isWeeklyRecurring(event, date)) ||
-          (event.repeat === "biWeekly" && isBiWeeklyRecurring(event, date)) ||
-          (event.repeat === "monthly" && isMonthlyRecurring(event, date)))
-    );
+   
+    const eventsForDate = context?.state.events[date.toLocaleDateString('sv-SE')] || [];
+  
+    console.log(eventsForDate, "eventsForDate");
+  
+    return eventsForDate.filter((event: Event) => {
+      const eventStart = event.startTime;
+      const eventEnd = event.endTime;
+  
+      // Detect time conflicts
+      const timeConflict = startTime < eventEnd && endTime > eventStart;
+  
+      // Check if recurring rule applies
+      const isRecurring =
+        (event.repeat === "weekly" && isWeeklyRecurring(event, date)) ||
+        (event.repeat === "biWeekly" && isBiWeeklyRecurring(event, date)) ||
+        (event.repeat === "monthly" && isMonthlyRecurring(event, date));
+  
+      return timeConflict || isRecurring;
+    });
   };
+  
 
   if (!context) {
     throw new Error("useEvents must be used within an EventProvider");

@@ -1,8 +1,8 @@
 import { Button, ButtonText } from "@/components/ui/button";
-import { View, Text, TextInput, Alert } from "react-native";
+import { TextInput, Alert } from "react-native";
 import { Calendar } from "react-native-calendars";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { Box } from "@/components/ui/box";
 import {
   Select,
@@ -19,7 +19,7 @@ import {
 import { Center } from "@/components/ui/center";
 import { ChevronDownIcon } from "@/components/ui/icon";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { EventProvider, useEvents } from "@/state/EventContext";
+import { useEvents } from "@/state/EventContext";
 
 export default function RnCalendar() {
   const { state, dispatch, getEventsForDate } = useEvents();
@@ -53,7 +53,7 @@ export default function RnCalendar() {
         name: eventName,
         startTime,
         endTime,
-        date: new Date(selectedDate),
+        date: selectedDate,
         repeat,
         id: `event-${Date.now()}`,
       };
