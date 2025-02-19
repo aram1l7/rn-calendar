@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface Event {
+export interface CalendarEvent {
   id: string;
   name: string;
   date: string;
@@ -11,15 +11,16 @@ interface Event {
 }
 
 interface EventState {
-  events: Record<string, Event[]>;
+  events: Record<string, CalendarEvent[]>;
 }
 
 type EventAction =
-  | { type: "ADD_EVENT"; payload: Event }
-  | { type: "EDIT_EVENT"; payload: Event }
+  | { type: "ADD_EVENT"; payload: CalendarEvent }
+  | { type: "EDIT_EVENT"; payload: CalendarEvent }
   | { type: "DELETE_EVENT"; payload: { id: string; date: string } }
-  | { type: "LOAD_EVENTS"; payload: Record<string, Event[]> };
+  | { type: "LOAD_EVENTS"; payload: Record<string, CalendarEvent[]> };
 
+  
 const eventReducer = (state: EventState, action: EventAction): EventState => {
   switch (action.type) {
     case "ADD_EVENT":
@@ -103,14 +104,14 @@ export const EventProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const isWeeklyRecurring = (event: Event, date: Date) => {
+const isWeeklyRecurring = (event: CalendarEvent, date: Date) => {
   const eventDate = new Date(event.date);
   const checkDate = new Date(date);
 
   return checkDate >= eventDate && checkDate.getDay() === eventDate.getDay();
 };
 
-const isBiWeeklyRecurring = (event: Event, date: Date) => {
+const isBiWeeklyRecurring = (event: CalendarEvent, date: Date) => {
   const eventDate = new Date(event.date).getTime();
   const checkDate = new Date(date).getTime();
 
@@ -118,7 +119,7 @@ const isBiWeeklyRecurring = (event: Event, date: Date) => {
   return checkDate >= eventDate && diffDays % 14 === 0;
 };
 
-const isMonthlyRecurring = (event: Event, date: Date) => {
+const isMonthlyRecurring = (event: CalendarEvent, date: Date) => {
   const eventDate = new Date(event.date);
   const checkDate = new Date(date);
 
@@ -129,28 +130,24 @@ export const useEvents = () => {
   const context = useContext(EventContext);
 
   const getEventsForDate = (date: Date, startTime: string, endTime: string) => {
-   
-    const eventsForDate = context?.state.events[new Date(date).toLocaleDateString('sv-SE')] || [];
+    const eventsForDate =
+      context?.state.events[new Date(date).toLocaleDateString("sv-SE")] || [];
+
   
-    console.log(eventsForDate, "eventsForDate");
-  
-    return eventsForDate.filter((event: Event) => {
+    return eventsForDate.filter((event: CalendarEvent) => {
       const eventStart = event.startTime;
       const eventEnd = event.endTime;
-  
-      // Detect time conflicts
+
       const timeConflict = startTime < eventEnd && endTime > eventStart;
-  
-      // Check if recurring rule applies
+
       const isRecurring =
         (event.repeat === "weekly" && isWeeklyRecurring(event, date)) ||
         (event.repeat === "biWeekly" && isBiWeeklyRecurring(event, date)) ||
         (event.repeat === "monthly" && isMonthlyRecurring(event, date));
-  
+
       return timeConflict || isRecurring;
     });
   };
-  
 
   if (!context) {
     throw new Error("useEvents must be used within an EventProvider");

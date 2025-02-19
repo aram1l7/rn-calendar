@@ -27,7 +27,23 @@ import {
 import { Center } from "@/components/ui/center";
 import { ChevronDownIcon } from "@/components/ui/icon";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useEvents } from "@/state/EventContext";
+import { CalendarEvent, useEvents } from "@/state/EventContext";
+
+const repeatOptions: { weekly: string; biWeekly: string; monthly: string } = {
+  weekly: "Weekly",
+  biWeekly: "Bi-Weekly",
+  monthly: "Monthly",
+};
+
+const parseTime = (date: string, time: string) => {
+  const [timePart, modifier] = time.split(" ");
+  let [hours, minutes] = timePart.split(":").map(Number);
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return new Date(date).setHours(hours, minutes, 0, 0);
+};
 
 export default function RnCalendar() {
   const { state, dispatch, getEventsForDate } = useEvents();
@@ -41,6 +57,9 @@ export default function RnCalendar() {
   const [isEndPickerVisible, setEndPickerVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+
   useEffect(() => {
     loadEvents();
   }, []);
@@ -51,7 +70,7 @@ export default function RnCalendar() {
       dispatch({ type: "LOAD_EVENTS", payload: JSON.parse(storedEvents) });
     }
   };
-  const saveEvent = async () => {
+  const saveOrEditEvent = async () => {
     try {
       if (!selectedDate || !eventName || !startTime || !endTime) {
         Alert.alert("Error", "Please select a date, event name, and times");
@@ -75,11 +94,14 @@ export default function RnCalendar() {
         return;
       }
 
-      const existingEvents = getEventsForDate(
-        newEvent.date,
-        startTime,
-        endTime
-      );
+      let existingEvents = getEventsForDate(newEvent.date, startTime, endTime);
+
+      if (isEditMode && editingEventId) {
+        existingEvents = existingEvents.filter(
+          (ele) => ele.id !== editingEventId
+        );
+      }
+
       console.log(existingEvents, "existingEvents");
 
       if (!existingEvents) {
@@ -99,19 +121,53 @@ export default function RnCalendar() {
         return;
       }
 
-      dispatch({ type: "ADD_EVENT", payload: newEvent });
+      if (isEditMode && editingEventId) {
+        dispatch({
+          type: "EDIT_EVENT",
+          payload: {
+            date: selectedDate,
+            ...newEvent,
+            id: editingEventId,
+          },
+        });
 
-      const updatedEvents = {
-        ...state.events,
-        [selectedDate]: [...(state.events[selectedDate] || []), newEvent],
-      };
+        console.log(state.events, "newEvents");
 
-      await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
-      Alert.alert("Success", "Event saved successfully!");
-      setSelectedDate("");
-      setEventName("");
-      setStartTime("");
-      setEndTime("");
+        const updatedEvents = {
+          ...state.events,
+          [selectedDate]: [
+            ...state.events[selectedDate]?.map((e) => {
+              if (e.id === editingEventId) {
+                return {
+                  ...e,
+                  ...newEvent,
+                };
+              }
+
+              return e;
+            }),
+          ],
+        };
+
+        await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
+        Alert.alert("Success", "Event saved successfully!");
+
+        onCancelEdit();
+      } else {
+        dispatch({ type: "ADD_EVENT", payload: newEvent });
+
+        const updatedEvents = {
+          ...state.events,
+          [selectedDate]: [...(state.events[selectedDate] || []), newEvent],
+        };
+
+        await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
+        Alert.alert("Success", "Event saved successfully!");
+        setSelectedDate("");
+        setEventName("");
+        setStartTime("");
+        setEndTime("");
+      }
     } catch (error) {
       console.error("Error in saveEvent:", error);
       Alert.alert("Error", "Something went wrong!");
@@ -157,6 +213,29 @@ export default function RnCalendar() {
     }
   };
 
+  const editItem = (item: CalendarEvent) => {
+    setIsEditMode(true);
+    setEditingEventId(item.id);
+    setRepeat(item.repeat);
+    setEndTime(item.endTime);
+    setStartTime(item.startTime);
+    setModalVisible(false);
+    setEventName(item.name);
+  };
+
+  const onCancelEdit = () => {
+    setIsEditMode(false);
+    setEditingEventId(null);
+    setRepeat("weekly");
+    setEndTime("");
+    setStartTime("");
+    setEventName("");
+    setSelectedDate("");
+  };
+
+  const isPastEvent =
+    new Date(selectedDate).getTime() < new Date().setHours(0, 0, 0, 0);
+
   return (
     <Center>
       <Calendar
@@ -188,31 +267,36 @@ export default function RnCalendar() {
                 }}
               >
                 <Text>
-                  {item.name} - From: {item.startTime} - To: {item.endTime} {" "}
-                  {item.repeat === "weekly"
-                    ? "Weekly"
-                    : item.repeat === "biWeekly"
-                    ? "Bi-Weekly"
-                    : "Monthly"}
+                  {item.name} - From: {item.startTime} - To: {item.endTime}{" "}
+                  {repeatOptions[item.repeat]}
                 </Text>
 
-                <Box style={{ display: "flex", flexDirection: "row", gap: 8, marginTop: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      // editEv(item.id, item.date);
+                {!isPastEvent && (
+                  <Box
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: 8,
+                      marginTop: 8,
                     }}
                   >
-                    <Text style={{ color: "blue" }}>Edit</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        editItem(item as unknown as CalendarEvent);
+                      }}
+                    >
+                      <Text style={{ color: "blue" }}>Edit</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      deleteEvent(item.id, item.date);
-                    }}
-                  >
-                    <Text style={{ color: "red" }}>Delete</Text>
-                  </TouchableOpacity>
-                </Box>
+                    <TouchableOpacity
+                      onPress={() => {
+                        deleteEvent(item.id, item.date);
+                      }}
+                    >
+                      <Text style={{ color: "red" }}>Delete</Text>
+                    </TouchableOpacity>
+                  </Box>
+                )}
               </View>
             )}
           />
@@ -279,6 +363,7 @@ export default function RnCalendar() {
           selectedValue={repeat}
           onValueChange={setRepeat}
           placeholder="Repeat"
+          key={repeat}
           className="mt-4"
         >
           <SelectTrigger
@@ -286,7 +371,10 @@ export default function RnCalendar() {
             variant="outline"
             size="md"
           >
-            <SelectInput className="h-full" placeholder="Select option" />
+            <Text className="pl-4">
+              {repeatOptions[repeat as keyof typeof repeatOptions] ||
+                "Select an option"}
+            </Text>
             <SelectIcon className="mr-3" as={ChevronDownIcon} />
           </SelectTrigger>
           <SelectPortal>
@@ -301,12 +389,24 @@ export default function RnCalendar() {
             </SelectContent>
           </SelectPortal>
         </Select>
+        {isEditMode && (
+          <Button
+            className="w-full text-center rounded-lg mt-3 mb-3"
+            onPress={onCancelEdit}
+          >
+            <ButtonText className="text-center w-full">
+              Cancel changes
+            </ButtonText>
+          </Button>
+        )}
 
         <Button
           className="w-full text-center rounded-lg mt-3"
-          onPress={saveEvent}
+          onPress={saveOrEditEvent}
         >
-          <ButtonText className="text-center w-full">Save Event</ButtonText>
+          <ButtonText className="text-center w-full">
+            {isEditMode ? "Update" : "Save"} Event
+          </ButtonText>
         </Button>
       </Box>
     </Center>
