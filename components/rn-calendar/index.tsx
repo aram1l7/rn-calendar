@@ -1,4 +1,7 @@
-import { Button, ButtonText } from "@/components/ui/button";
+import { Calendar } from "react-native-calendars";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import {
   TextInput,
   Alert,
@@ -8,9 +11,8 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
-import { Calendar } from "react-native-calendars";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+
+import { Button, ButtonText } from "@/components/ui/button";
 import { Box } from "@/components/ui/box";
 import {
   Select,
@@ -19,14 +21,12 @@ import {
   SelectDragIndicator,
   SelectDragIndicatorWrapper,
   SelectIcon,
-  SelectInput,
   SelectItem,
   SelectPortal,
   SelectTrigger,
 } from "@/components/ui/select";
 import { Center } from "@/components/ui/center";
 import { ChevronDownIcon } from "@/components/ui/icon";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { CalendarEvent, useEvents } from "@/state/EventContext";
 
 const repeatOptions: { weekly: string; biWeekly: string; monthly: string } = {
@@ -62,6 +62,7 @@ export default function RnCalendar() {
   };
   const saveOrEditEvent = async () => {
     try {
+      console.log(selectedDate, "selectedDate", eventName, startTime, endTime);
       if (!selectedDate || !eventName || !startTime || !endTime) {
         Alert.alert("Error", "Please select a date, event name, and times");
         return;
@@ -76,10 +77,7 @@ export default function RnCalendar() {
         id: `event-${Date.now()}`,
       };
 
-      console.log(newEvent, "newEvent");
-
       if (new Date(selectedDate).getTime() < new Date().setHours(0, 0, 0, 0)) {
-        console.log("Invalid Date Attempt");
         Alert.alert("Invalid Date", "Cannot create events in the past.");
         return;
       }
@@ -92,19 +90,11 @@ export default function RnCalendar() {
         );
       }
 
-      console.log(existingEvents, "existingEvents");
-
-      if (!existingEvents) {
-        console.log("getEventsForDate returned undefined or null");
-      }
-
       const hasConflict = existingEvents?.some(
         (event) =>
           newEvent.startTime < event.endTime &&
           newEvent.endTime > event.startTime
       );
-
-      console.log(hasConflict, "hasConflict");
 
       if (hasConflict) {
         alert("Event time conflicts with another event!");
@@ -120,8 +110,6 @@ export default function RnCalendar() {
             id: editingEventId,
           },
         });
-
-        console.log(state.events, "newEvents");
 
         const updatedEvents = {
           ...state.events,
@@ -226,12 +214,13 @@ export default function RnCalendar() {
     new Date(selectedDate).getTime() < new Date().setHours(0, 0, 0, 0);
 
   return (
-    <Center>
+    <Center className="mt-12">
       <Calendar
         onDayPress={(day: any) => {
           setSelectedDate(day.dateString);
           setModalVisible(true);
         }}
+        className='w-full'
         markedDates={getMarkedDates()}
       />
 
@@ -298,7 +287,7 @@ export default function RnCalendar() {
               </View>
             )}
           />
-          <Button onPress={() => setModalVisible(false)}>
+          <Button testID="closeModalBtn" onPress={() => setModalVisible(false)}>
             <ButtonText>Close</ButtonText>
           </Button>
         </View>
@@ -308,14 +297,16 @@ export default function RnCalendar() {
         <TextInput
           placeholder="Event Name"
           value={eventName}
+          testID="eventNameInput"
           onChangeText={setEventName}
           style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
         />
         <Button
           className="w-full mt-2"
           onPress={() => setStartPickerVisible(true)}
+          testID="startTime"
         >
-          <ButtonText className="w-full text-center">
+          <ButtonText testID="startTimeText" className="w-full text-center">
             Select Start Time:{" "}
             {startTime
               ? new Date(startTime).toLocaleTimeString([], {
@@ -333,14 +324,16 @@ export default function RnCalendar() {
             setStartPickerVisible(false);
           }}
           onCancel={() => setStartPickerVisible(false)}
+          testID="startTimePicker"
         />
 
         <Button
           className="w-full mt-2"
           onPress={() => setEndPickerVisible(true)}
+          testID="endTime"
         >
           <ButtonText className="w-full text-center">
-            Select Start Time:{" "}
+            Select End Time:{" "}
             {endTime
               ? new Date(endTime).toLocaleTimeString([], {
                   hour: "2-digit",
@@ -357,6 +350,7 @@ export default function RnCalendar() {
             setEndPickerVisible(false);
           }}
           onCancel={() => setEndPickerVisible(false)}
+          testID="endTimePicker"
         />
 
         <Select
@@ -403,6 +397,7 @@ export default function RnCalendar() {
         <Button
           className="w-full text-center rounded-lg mt-3"
           onPress={saveOrEditEvent}
+          testID="saveButton"
         >
           <ButtonText className="text-center w-full">
             {isEditMode ? "Update" : "Save"} Event

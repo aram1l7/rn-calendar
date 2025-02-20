@@ -4,5 +4,11 @@ import "@/global.css";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 
 export default function RootLayout() {
-  return <GluestackUIProvider mode="light"><Stack /></GluestackUIProvider>;
+  return (
+    <GluestackUIProvider mode="light">
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+      </Stack>
+    </GluestackUIProvider>
+  );
 }

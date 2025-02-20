@@ -1,50 +1,48 @@
-# Welcome to your Expo app 👋
+# Event Planner App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native app for planning and managing events with date and time selection.
 
-## Get started
+## 📋 Features
+- Select a date for your event
+- Choose start and end times using a time picker
+- Prevents selecting past dates
+- Alerts for missing information
 
-1. Install dependencies
+## 🚀 Installation & Setup
 
-   ```bash
-   npm install
-   ```
+### 1️⃣ Prerequisites
+Ensure you have the following installed:
+- [Node.js](https://nodejs.org/)
+- [Npm]
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
 
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+### 2️⃣ Clone the Repository
+```sh
+git clone https://github.com/aram1l7/event-planner.git
+cd event-planner
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3️⃣ Install Dependencies
+```sh
+npm install  
+```
 
-## Learn more
+### 4️⃣ Run the App
+```sh
+npm start
+```
+This will launch the Expo developer tools. You can scan the QR code using the Expo Go app or run it on an emulator.
 
-To learn more about developing your project with Expo, look at the following resources:
+### 5️⃣ Running Tests
+```sh
+npm test 
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🛠 Technologies Used
+- React Native
+- Expo
+- React Navigation
+- Jest (for testing)
+- react-native-calendars
 
-## Join the community
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
