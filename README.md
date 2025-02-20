@@ -13,7 +13,7 @@ A React Native app for planning and managing events with date and time selection
 ### 1️⃣ Prerequisites
 Ensure you have the following installed:
 - [Node.js](https://nodejs.org/)
-- [Npm]
+- [Npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 
 ### 2️⃣ Clone the Repository
