@@ -5,8 +5,8 @@ export interface CalendarEvent {
   id: string;
   name: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  startTime: number;
+  endTime: number;
   repeat: "weekly" | "biWeekly" | "monthly";
 }
 
@@ -20,7 +20,6 @@ type EventAction =
   | { type: "DELETE_EVENT"; payload: { id: string; date: string } }
   | { type: "LOAD_EVENTS"; payload: Record<string, CalendarEvent[]> };
 
-  
 const eventReducer = (state: EventState, action: EventAction): EventState => {
   switch (action.type) {
     case "ADD_EVENT":
@@ -129,11 +128,10 @@ const isMonthlyRecurring = (event: CalendarEvent, date: Date) => {
 export const useEvents = () => {
   const context = useContext(EventContext);
 
-  const getEventsForDate = (date: Date, startTime: string, endTime: string) => {
+  const getEventsForDate = (date: Date, startTime: number, endTime: number) => {
     const eventsForDate =
       context?.state.events[new Date(date).toLocaleDateString("sv-SE")] || [];
 
-  
     return eventsForDate.filter((event: CalendarEvent) => {
       const eventStart = event.startTime;
       const eventEnd = event.endTime;

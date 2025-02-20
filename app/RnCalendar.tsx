@@ -35,24 +35,14 @@ const repeatOptions: { weekly: string; biWeekly: string; monthly: string } = {
   monthly: "Monthly",
 };
 
-const parseTime = (date: string, time: string) => {
-  const [timePart, modifier] = time.split(" ");
-  let [hours, minutes] = timePart.split(":").map(Number);
-
-  if (modifier === "PM" && hours !== 12) hours += 12;
-  if (modifier === "AM" && hours === 12) hours = 0;
-
-  return new Date(date).setHours(hours, minutes, 0, 0);
-};
-
 export default function RnCalendar() {
   const { state, dispatch, getEventsForDate } = useEvents();
   const [selectedDate, setSelectedDate] = useState("");
   const [eventName, setEventName] = useState("");
   const [repeat, setRepeat] = useState("weekly");
 
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [endTime, setEndTime] = useState<number | null>(null);
   const [isStartPickerVisible, setStartPickerVisible] = useState(false);
   const [isEndPickerVisible, setEndPickerVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -165,8 +155,8 @@ export default function RnCalendar() {
         Alert.alert("Success", "Event saved successfully!");
         setSelectedDate("");
         setEventName("");
-        setStartTime("");
-        setEndTime("");
+        setStartTime(null);
+        setEndTime(null);
       }
     } catch (error) {
       console.error("Error in saveEvent:", error);
@@ -183,10 +173,9 @@ export default function RnCalendar() {
       marked[date] = { marked: true, dotColor: "blue" };
     });
 
-    // Keep selectedDate highlighted as well
     if (selectedDate) {
       marked[selectedDate] = {
-        ...marked[selectedDate], // Preserve existing marks
+        ...marked[selectedDate],
         selected: true,
         selectedColor: "yellow",
       };
@@ -227,8 +216,8 @@ export default function RnCalendar() {
     setIsEditMode(false);
     setEditingEventId(null);
     setRepeat("weekly");
-    setEndTime("");
-    setStartTime("");
+    setEndTime(null);
+    setStartTime(null);
     setEventName("");
     setSelectedDate("");
   };
@@ -267,7 +256,16 @@ export default function RnCalendar() {
                 }}
               >
                 <Text>
-                  {item.name} - From: {item.startTime} - To: {item.endTime}{" "}
+                  {item.name} - From:{" "}
+                  {new Date(item.startTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  - To:{" "}
+                  {new Date(item.endTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
                   {repeatOptions[item.repeat]}
                 </Text>
 
@@ -318,19 +316,20 @@ export default function RnCalendar() {
           onPress={() => setStartPickerVisible(true)}
         >
           <ButtonText className="w-full text-center">
-            Select Start Time: {startTime || "Not Set"}
+            Select Start Time:{" "}
+            {startTime
+              ? new Date(startTime).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Not set"}
           </ButtonText>
         </Button>
         <DateTimePickerModal
           isVisible={isStartPickerVisible}
           mode="time"
           onConfirm={(date: Date) => {
-            setStartTime(
-              date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            );
+            setStartTime(date.getTime());
             setStartPickerVisible(false);
           }}
           onCancel={() => setStartPickerVisible(false)}
@@ -341,19 +340,20 @@ export default function RnCalendar() {
           onPress={() => setEndPickerVisible(true)}
         >
           <ButtonText className="w-full text-center">
-            Select End Time: {endTime || "Not Set"}
+            Select Start Time:{" "}
+            {endTime
+              ? new Date(endTime).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Not set"}
           </ButtonText>
         </Button>
         <DateTimePickerModal
           isVisible={isEndPickerVisible}
           mode="time"
           onConfirm={(date: Date) => {
-            setEndTime(
-              date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            );
+            setEndTime(date.getTime());
             setEndPickerVisible(false);
           }}
           onCancel={() => setEndPickerVisible(false)}
