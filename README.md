@@ -18,8 +18,8 @@ Ensure you have the following installed:
 
 ### 2️⃣ Clone the Repository
 ```sh
-git clone https://github.com/aram1l7/event-planner.git
-cd event-planner
+git clone https://github.com/aram1l7/rn-calendar.git
+cd rn-calendar
 ```
 
 ### 3️⃣ Install Dependencies
